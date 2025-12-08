@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <!-- 響應式設計必備 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SYSTEM_ROOT // USER_PROFILE</title>
+    
+    <!-- 引入駭客風格字體 -->
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    
+    <!-- 引入 Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        :root {
+            --neon-green: #0f0;
+            --dark-bg: #050505;
+            --panel-bg: rgba(0, 20, 0, 0.85);
+            --border-color: #003300;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth; /* 錨點平滑捲動 */
+        }
+
+        body {
+            font-family: 'VT323', monospace;
+            background-color: var(--dark-bg);
+            color: var(--neon-green);
+            overflow-x: hidden;
+            font-size: 18px;
+        }
+
+        /* 畫布樣式 (Three.js 背景) */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.6;
+        }
+
+        /* CRT 螢幕掃描線效果 */
+        .scanlines {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.2) 50%,
+                rgba(0,0,0,0.2)
+            );
+            background-size: 100% 4px;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* 開場畫面 */
+        #intro-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 1s ease-out;
+        }
+
+        .glitch-btn {
+            background: transparent;
+            border: 2px solid var(--neon-green);
+            color: var(--neon-green);
+            padding: 15px 40px;
+            font-family: 'VT323', monospace;
+            font-size: 24px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            position: relative;
+            overflow: hidden;
+            transition: 0.3s;
+        }
+
+        .glitch-btn:hover {
+            background: var(--neon-green);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-green);
+        }
+
+        /* 主導覽列 */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            border-bottom: 1px solid var(--neon-green);
+            padding: 10px 0;
+            z-index: 100;
+            display: none; /* 初始隱藏 */
+        }
+
+        nav ul {
+            display: flex;
+            justify-content: center;
+            list-style: none;
+        }
+
+        nav ul li {
+            margin: 0 15px;
+        }
+
+        nav a {
+            color: var(--neon-green);
+            text-decoration: none;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+        }
+
+        nav a:hover {
+            text-shadow: 0 0 8px var(--neon-green);
+            text-decoration: underline;
+        }
+
+        /* 主內容容器 */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 80px 20px 20px;
+            display: none; /* 初始隱藏 */
+            opacity: 0;
+            transition: opacity 1.5s ease-in;
+        }
+
+        section {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            padding: 30px;
+            margin-bottom: 40px;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.1);
+            position: relative;
+        }
+
+        section::before {
+            content: '';
+            position: absolute;
+            top: -1px;
+            left: -1px;
+            width: 10px;
+            height: 10px;
+            border-top: 2px solid var(--neon-green);
+            border-left: 2px solid var(--neon-green);
+        }
+
+        section::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            right: -1px;
+            width: 10px;
+            height: 10px;
+            border-bottom: 2px solid var(--neon-green);
+            border-right: 2px solid var(--neon-green);
+        }
+
+        h2 {
+            border-bottom: 2px solid var(--neon-green);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+            font-size: 2rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        /* 個人資訊區塊 */
+        .profile-content {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .avatar-box {
+            width: 150px;
+            height: 150px;
+            border: 2px solid var(--neon-green);
+            padding: 5px;
+            position: relative;
+        }
+
+        .avatar-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(100%) contrast(1.2);
+        }
+
+        .info-text ul {
+            list-style: none;
+            margin-top: 10px;
+        }
+        
+        .info-text a {
+            color: var(--neon-green);
+        }
+
+        /* 技能展示區 (進度條) */
+        .skill-item {
+            margin-bottom: 15px;
+        }
+
+        .skill-name {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .progress-bar-bg {
+            width: 100%;
+            height: 20px;
+            background: #111;
+            border: 1px solid #333;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--neon-green);
+            width: 0;
+            transition: width 1.5s ease-in-out;
+            box-shadow: 0 0 10px var(--neon-green);
+        }
+
+        /* 時間軸 */
+        .timeline {
+            position: relative;
+            padding-left: 20px;
+            border-left: 2px solid var(--neon-green);
+        }
+
+        .timeline-item {
+            margin-bottom: 30px;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -26px;
+            top: 5px;
+            width: 10px;
+            height: 10px;
+            background: #000;
+            border: 2px solid var(--neon-green);
+            border-radius: 50%;
+        }
+
+        .timeline-date {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+            background: var(--neon-green);
+            color: #000;
+            display: inline-block;
+            padding: 0 5px;
+        }
+
+        /* 專案作品集 (卡片) */
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .project-card {
+            border: 1px solid var(--neon-green);
+            padding: 20px;
+            background: rgba(0, 20, 0, 0.5);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 255, 0, 0.2);
+            background: rgba(0, 40, 0, 0.8);
+        }
+
+        .project-card h3 {
+            margin-bottom: 10px;
+        }
+        
+        .role-tag {
+            font-size: 0.8rem;
+            border: 1px solid var(--neon-green);
+            padding: 2px 6px;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+
+        .project-links a {
+            display: inline-block;
+            margin-top: 10px;
+            color: #000;
+            background: var(--neon-green);
+            padding: 5px 10px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            border-top: 1px solid #333;
+            color: #555;
+            margin-bottom: 40px;
+        }
+
+        /* RWD 手機版調整 */
+        @media (max-width: 600px) {
+            .profile-content {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            nav ul {
+                flex-wrap: wrap;
+            }
+            
+            nav ul li {
+                margin: 5px 10px;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 掃描線特效層 -->
+    <div class="scanlines"></div>
+
+    <!-- Three.js 背景容器 -->
+    <div id="canvas-container"></div>
+
+    <!-- 開場覆蓋層 -->
+    <div id="intro-overlay">
+        <h1 style="color: var(--neon-green); margin-bottom: 20px; text-shadow: 0 0 10px var(--neon-green);">SYSTEM ACCESS</h1>
+        <button class="glitch-btn" onclick="enterSystem()">[ INITIALIZE SYSTEM ]</button>
+    </div>
+
+    <!-- 導覽列 -->
+    <nav id="navbar">
+        <ul>
+            <li><a href="#profile">Profile</a></li>
+            <li><a href="#skills">Skills</a></li>
+            <li><a href="#timeline">Timeline</a></li>
+            <li><a href="#projects">Projects</a></li>
+        </ul>
+    </nav>
+
+    <!-- 主內容 -->
+    <div class="container" id="main-content">
+        
+        <!-- 個人資訊區塊 -->
+        <section id="profile">
+            <h2>// 01_User_Profile</h2>
+            <div class="profile-content">
+                <div class="avatar-box">
+                    <!-- 這裡用 Placehold.co 生成假圖，你可以換成自己的照片 -->
+                    <img src="https://placehold.co/150x150/000000/00ff00?text=USER" alt="Avatar">
+                </div>
+                <div class="info-text">
+                    <h1>YOUR NAME</h1>
+                    <p style="margin: 10px 0;">數位遊牧者 | 全端開發者 | 駭客愛好者</p>
+                    <ul>
+                        <li>EMAIL: yourname@example.com</li>
+                        <li>GITHUB: <a href="#" target="_blank">github.com/yourname</a></li>
+                        <li>IG: @your_ig_id</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- 技能展示區 -->
+        <section id="skills">
+            <h2>// 02_System_Capabilities</h2>
+            <div class="skill-item">
+                <div class="skill-name"><span>Web Development (HTML/CSS/JS)</span><span>90%</span></div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: 90%;"></div></div>
+            </div>
+            <div class="skill-item">
+                <div class="skill-name"><span>Graphic Design (PS/AI)</span><span>75%</span></div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: 75%;"></div></div>
+            </div>
+            <div class="skill-item">
+                <div class="skill-name"><span>Project Management</span><span>60%</span></div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: 60%;"></div></div>
+            </div>
+            <div class="skill-item">
+                <div class="skill-name"><span>Communication</span><span>85%</span></div>
+                <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: 85%;"></div></div>
+            </div>
+        </section>
+
+        <!-- 工作/經歷時間軸 -->
+        <section id="timeline">
+            <h2>// 03_Log_History</h2>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <span class="timeline-date">2023 - PRESENT</span>
+                    <h3>大學資訊社團 - 社長</h3>
+                    <p>負責規劃學期課程，舉辦黑客松活動，帶領 50+ 社員學習 Web 技術。</p>
+                </div>
+                <div class="timeline-item">
+                    <span class="timeline-date">2021 - 2023</span>
+                    <h3>高中科學展覽 - 資訊組長</h3>
+                    <p>開發校園自動化點名系統，獲得校內科展優等。</p>
+                </div>
+                <div class="timeline-item">
+                    <span class="timeline-date">2020 SUMMER</span>
+                    <h3>飲料店 - 實習工讀</h3>
+                    <p>學習團隊合作與顧客應對技巧，負責庫存管理與POS機操作。</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- 專案作品集 -->
+        <section id="projects">
+            <h2>// 04_Project_Database</h2>
+            <div class="projects-grid">
+                <!-- 卡片 1 -->
+                <div class="project-card">
+                    <h3>校園二手書交易平台</h3>
+                    <div class="role-tag">Role: Full-Stack Dev</div>
+                    <p>為了解決學長姐舊書浪費問題，開發了一個基於 PHP 與 MySQL 的交易布告欄。</p>
+                    <div class="project-links">
+                        <a href="#">ACCESS DATA</a>
+                    </div>
+                </div>
+                <!-- 卡片 2 -->
+                <div class="project-card">
+                    <h3>個人攝影作品集</h3>
+                    <div class="role-tag">Role: UI/UX Designer</div>
+                    <p>高中時期設計的靜態網頁，展示街頭攝影作品，注重排版與視覺流動。</p>
+                    <div class="project-links">
+                        <a href="#">VIEW IMAGE</a>
+                    </div>
+                </div>
+                <!-- 卡片 3 -->
+                <div class="project-card">
+                    <h3>Python 自動搶票機器人</h3>
+                    <div class="role-tag">Role: Script Writer</div>
+                    <p>利用 Selenium 模擬瀏覽器行為，練習自動化腳本撰寫 (僅供學術研究)。</p>
+                    <div class="project-links">
+                        <a href="#">SOURCE CODE</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer>
+            <p>SYSTEM TERMINATED. © 2023 YOUR NAME.</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- Three.js 背景動畫設定 ---
+        const initThreeJS = () => {
+            const container = document.getElementById('canvas-container');
+            
+            // 場景、相機、渲染器
+            const scene = new THREE.Scene();
+            // 添加一點霧氣，增加深邃感
+            scene.fog = new THREE.FogExp2(0x000000, 0.002);
+
+            const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ alpha: true }); // alpha: true 讓背景透明
+            
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // 建立粒子系統 (Hacker Matrix 感覺)
+            const geometry = new THREE.BufferGeometry();
+            const particlesCount = 2000;
+            const posArray = new Float32Array(particlesCount * 3);
+
+            for(let i = 0; i < particlesCount * 3; i++) {
+                // 在 -50 到 50 之間隨機分布
+                posArray[i] = (Math.random() - 0.5) * 100;
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+            // 粒子材質 (綠色)
+            const material = new THREE.PointsMaterial({
+                size: 0.2,
+                color: 0x00ff00,
+                transparent: true,
+                opacity: 0.8,
+            });
+
+            const particlesMesh = new THREE.Points(geometry, material);
+            scene.add(particlesMesh);
+
+            camera.position.z = 30;
+
+            // 滑鼠互動
+            let mouseX = 0;
+            let mouseY = 0;
+
+            document.addEventListener('mousemove', (event) => {
+                mouseX = event.clientX - window.innerWidth / 2;
+                mouseY = event.clientY - window.innerHeight / 2;
+            });
+
+            // 動畫循環
+            const animate = () => {
+                requestAnimationFrame(animate);
+
+                // 粒子自我旋轉
+                particlesMesh.rotation.y += 0.002;
+                particlesMesh.rotation.x += 0.001;
+
+                // 根據滑鼠位置微調相機 (視差效果)
+                camera.position.x += (mouseX * 0.01 - camera.position.x) * 0.05;
+                camera.position.y += (-mouseY * 0.01 - camera.position.y) * 0.05;
+
+                renderer.render(scene, camera);
+            };
+
+            animate();
+
+            // 視窗縮放處理
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            });
+        };
+
+        // 執行 Three.js
+        initThreeJS();
+
+        // --- 互動邏輯 ---
+        function enterSystem() {
+            const overlay = document.getElementById('intro-overlay');
+            const mainContent = document.getElementById('main-content');
+            const navbar = document.getElementById('navbar');
+
+            // 1. 淡出遮罩
+            overlay.style.opacity = '0';
+            
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                
+                // 2. 顯示內容
+                navbar.style.display = 'block';
+                mainContent.style.display = 'block';
+                
+                // 強制重繪後再加 opacity 觸發 transition
+                setTimeout(() => {
+                    mainContent.style.opacity = '1';
+                }, 50);
+
+            }, 1000); // 等待遮罩淡出
+        }
+    </script>
+</body>
+</html>
