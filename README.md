@@ -52,22 +52,15 @@
 - **JavaScript (ES6+)**: DOM 操作, 邏輯控制
 - **Three.js**: 背景 3D 粒子特效 (透過 CDN 引入)
 
-# 個人履歷網站 (Git 操作練習)
-
-這是一個練習 Git 版本控制與 GitHub 協作流程的專案。包含分支管理、Pull Request、A/B Testing 以及版本回復的操作紀錄。
-
-## 🚀 線上展示
-- **網站網址 (GitHub Pages)：** [請在此貼上你的 GitHub Pages 網址，例如 https://username.github.io/repo-name/]
 
 ## 📝 作業操作說明 (評分重點)
 
 ### 1. 版本回復 (Git Revert)
-我在這次作業中使用 `git revert` 回復了標題為 `feat: add wrong content intentionally` 的 commit。
+我在這次作業中使用 `git revert` 回復了標題為 `change index.html` 的 commit。
 
-- **原因：** 該次 commit 模擬了在開發過程中誤將錯誤的程式碼推送到遠端分支的情況。為了嚴格遵守版本控制原則，不破壞共用分支（main）的歷史紀錄（History），我選擇使用 `git revert` 產生一個新的反向 commit 來抵銷該次修改，而非使用 `git reset` 強制刪除紀錄。
+- **原因：** `index.html` 有錯字，導致前端顯示有誤
 
 ### 2. A/B 版本實驗 (A/B Test)
-針對 **Skills (技能列表)** 區塊，我分別在不同分支實作了兩種視覺版本，最終決策如下：
 
 | 版本代號 | 分支名稱 | 狀態 | 決策原因 |
 | :--- | :--- | :--- | :--- |
