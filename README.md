@@ -1,4 +1,4 @@
-# SYSTEM_ROOT // JASON_WU Portfolio
+# JASON_WU Portfolio
 
 這是一個基於 HTML/CSS/JS 與 Three.js 打造的「駭客/終端機風格」個人履歷網站。
 網站設計採用深色模式、霓虹綠配色，並包含 3D 粒子背景與打字機特效，適合展示資訊工程、資安或程式開發相關的作品集。
